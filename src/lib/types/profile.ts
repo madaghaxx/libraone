@@ -1,15 +1,13 @@
-import type { PublicUserFieldsFragment } from '$lib/graphql/generated';
-
 export type LastSession = {
 	start: string;
 	end: string;
-	hostname?: string | null;
-	ip_address?: string | null;
+	hostname: string;
+	ip_address: string;
 };
 
 export type MaplProfile = {
-	main_group?: string | null;
-	sub_group?: string | null;
+	main_group: string;
+	sub_group: string;
 	location?: string | null;
 	last_session?: LastSession | null;
 };
@@ -20,9 +18,3 @@ export type LogtimeMonth = {
 };
 
 export type LogtimeData = Record<string, LogtimeMonth>;
-
-export type PageDataBundle = {
-	user: PublicUserFieldsFragment | null;
-	profile: MaplProfile | null;
-	logtime: LogtimeData | null;
-};

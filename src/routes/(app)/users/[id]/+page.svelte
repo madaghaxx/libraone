@@ -1,28 +1,36 @@
 <script lang="ts">
-	import { Client } from '$lib/graphql/client';
-	import { GetUserByIdDocument, GetUserByLoginDocument } from '$lib/graphql/generated';
-	import { get } from 'svelte/store';
-	import type { PageProps } from './$types';
-	import { profileUserState } from '$lib/stores/user.svelte';
-	import SkeletonLoader from '$lib/components/profile/SkeletonLoader.svelte';
+	import UserGroupsList from '$lib/components/GroupList.svelte';
+	import LogtimeSection from '$lib/components/profile/LogtimeSection.svelte';
 	import NotFoundState from '$lib/components/profile/NotFoundState.svelte';
 	import ProfileHero from '$lib/components/profile/ProfileHero.svelte';
 	import SessionCard from '$lib/components/profile/SessionCard.svelte';
-	import LogtimeSection from '$lib/components/profile/LogtimeSection.svelte';
-	import type { PageDataBundle } from '$lib/types/profile';
+	import SkeletonLoader from '$lib/components/profile/SkeletonLoader.svelte';
+	import { Client } from '$lib/graphql/client';
+	import {
+		GetUserByIdDocument,
+		GetUserByLoginDocument,
+		type PublicUserFieldsFragment
+	} from '$lib/graphql/generated';
+	import { profileUserState } from '$lib/stores/user.svelte';
 	import { formatDateInput } from '$lib/utils/time';
-	import UserGroupsList from '$lib/components/GroupList.svelte';
+	import { get } from 'svelte/store';
+	import type { PageProps } from './$types';
+	import type { LogtimeData, MaplProfile } from '$lib/types/profile';
 
 	const { params }: PageProps = $props();
 
-	const getPublicUser = async () => {
-		if (Number.isInteger(+params.id)) {
-			const res = await Client.request(GetUserByIdDocument, { userId: +params.id });
-			return res.user_public_view[0] ?? null;
+	const getPublicUser = async (userId: string) => {
+		if (Number.isInteger(+userId)) {
+			const res = await Client.request(GetUserByIdDocument, { userId: +userId });
+			const publicUser = res.user_public_view[0];
+			if (!publicUser) throw new Error('user not found');
+			return publicUser;
 		}
 
-		const res = await Client.request(GetUserByLoginDocument, { userLogin: params.id });
-		return res.user_public_view[0] ?? null;
+		const res = await Client.request(GetUserByLoginDocument, { userLogin: userId });
+		const publicUser = res.user_public_view[0];
+		if (!publicUser) throw new Error('user not found');
+		return publicUser;
 	};
 
 	const getMaplProfile = async (login: string) => {
@@ -55,41 +63,46 @@
 		}
 	};
 
-	const allData = async (): Promise<PageDataBundle> => {
-		const user = await getPublicUser();
-		if (!user?.login) return { user: null, profile: null, logtime: null };
+	let user = $state<PublicUserFieldsFragment>();
+	let profile = $state<MaplProfile>();
+	let logtime = $state<LogtimeData>();
+	let loading = $state(true);
 
-		const [profile, logtime] = await Promise.all([
-			getMaplProfile(user.login),
-			getMaplLogtime(user.login)
-		]);
-
-		return { user, profile, logtime };
+	const mount = async () => {
+		try {
+			user = await getPublicUser(params.id);
+			if (user.login) {
+				getMaplProfile(user.login).then((p) => (profile = p));
+				getMaplLogtime(user.login).then((l) => (logtime = l));
+			}
+		} finally {
+			loading = false;
+		}
 	};
+	$effect(() => {
+		mount();
+	});
 </script>
 
 <div class="profile-root">
-	{#await allData()}
+	{#if loading}
 		<SkeletonLoader />
-	{:then { user, profile, logtime }}
-		{#if !user}
-			<NotFoundState />
-		{:else}
-			<ProfileHero {user} {profile} {logtime} />
-
+	{:else if user}
+		<ProfileHero {user} {profile} {logtime} />
+		{#if user.login}
 			{#if profile?.last_session}
 				<div class="cards-grid">
 					<SessionCard lastSession={profile.last_session} />
 				</div>
 			{/if}
-
 			{#if logtime}
 				<LogtimeSection {logtime} />
 			{/if}
 		{/if}
-	{:catch err}
-		<NotFoundState icon="⚠" title="Failed to load user data" detail={err.message} />
-	{/await}
+	{:else}
+		<NotFoundState icon="⚠" title="Failed to load user data" />
+	{/if}
+
 	<UserGroupsList userId={params.id} />
 </div>
 
