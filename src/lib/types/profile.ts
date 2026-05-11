@@ -29,3 +29,9 @@ export type LogtimeMonth = {
 };
 
 export type LogtimeData = Record<string, LogtimeMonth>;
+
+export interface LeaderboardUser {
+	username: string;
+	cohort: string;
+	value: number;
+}

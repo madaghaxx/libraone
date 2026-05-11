@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Event from '$lib/assets/svg/event.svelte';
 	import Gite from '$lib/assets/svg/gite.svelte';
+	import Leaderboard from '$lib/assets/svg/leaderboard.svelte';
 
 	const response = await fetch(
 		`https://api.github.com/repos/xySaad/libraone-frontend/contributors`
@@ -18,6 +19,10 @@
 	<a class="card" href={resolve('/map')}>
 		<Gite />
 		<p>Map</p>
+	</a>
+	<a class="card" href={resolve('/leaderboard')}>
+		<Leaderboard />
+		<p>Leaderboard</p>
 	</a>
 </nav>
 
@@ -55,6 +60,7 @@
 		transition: 0.2s ease;
 		min-width: 120px;
 		justify-content: center;
+		flex: 1;
 	}
 
 	.card:hover {

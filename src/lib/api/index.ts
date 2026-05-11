@@ -1,7 +1,13 @@
 import { profileUserState } from '$lib/stores/user.svelte';
 import { config, endpoint } from '$lib/types/config';
 import type { GraphQLObject } from '$lib/types/object';
-import type { LoginReq, LogtimeData, MaplProfile, ProfileCreds } from '$lib/types/profile';
+import type {
+	LeaderboardUser,
+	LoginReq,
+	LogtimeData,
+	MaplProfile,
+	ProfileCreds
+} from '$lib/types/profile';
 import { get } from 'svelte/store';
 
 export const api = {
@@ -15,6 +21,12 @@ export const api = {
 		},
 		logtime({ start, end, login }: { start: string; end: string; login: string }) {
 			return endpoint<LogtimeData>('GET', `/logtime/${login}?start=${start}&end=${end}`).call(this);
+		},
+		leaderboard({ start, end }: { start: string; end: string }) {
+			return endpoint<LeaderboardUser[]>(
+				'GET',
+				`/leaderboard?start=${start}&end=${end}&n=50&role=all`
+			).call(this);
 		}
 	}),
 	INTRA: config({
